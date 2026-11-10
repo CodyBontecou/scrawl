@@ -487,6 +487,12 @@ pub struct Config {
     /// Where new captures go (`default_captures_dir`); absent keeps the built-in folder.
     #[serde(default)]
     pub captures_dir: Option<String>,
+    /// `"herdr"` sends recordings to an agent in herdr (`crate::herdr`) instead of OpenCode.
+    #[serde(default)]
+    pub agent_backend: Option<String>,
+    /// The herdr backend's settings (`crate::herdr::HerdrConfig`).
+    #[serde(default)]
+    pub herdr: Option<crate::herdr::HerdrConfig>,
 }
 
 impl Config {
@@ -760,6 +766,16 @@ fn routing_paths(
             (id, path)
         })
         .collect()
+}
+
+/// `agentBackend` in config.json (`"herdr"`, or absent for OpenCode).
+pub fn agent_backend() -> Option<String> {
+    config().agent_backend.map(|b| b.trim().to_lowercase())
+}
+
+/// `herdr` in config.json, defaults when absent.
+pub fn herdr_config() -> crate::herdr::HerdrConfig {
+    config().herdr.unwrap_or_default()
 }
 
 /// Whether Mac captures of a dev site go straight to its session (`autoSend`, default on).
@@ -1427,9 +1443,20 @@ pub fn send_to_opencode_for_app(
     app_name: Option<&str>,
 ) -> Result<(String, String)> {
     let (_, bundle) = load_bundle(bundle_dir)?;
-    let (session, title) =
-        resolve_opencode_session(session_id, app_name.or(bundle.target.app.as_deref()))?;
-    send_bundle_to_session(bundle_dir, &session)?;
+    let (session, title) = crate::herdr::resolve_any(
+        session_id,
+        app_name.or(if crate::herdr::enabled() {
+            // herdr maps apps to folders by bundle ID (`routing.apps`).
+            bundle
+                .target
+                .bundle_id
+                .as_deref()
+                .or(bundle.target.app.as_deref())
+        } else {
+            bundle.target.app.as_deref()
+        }),
+    )?;
+    crate::herdr::forward_any(bundle_dir, &session)?;
     Ok((session, title))
 }
 

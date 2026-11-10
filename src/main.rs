@@ -19,6 +19,7 @@ mod feature_map;
 mod handoff;
 #[cfg_attr(target_os = "windows", path = "win/helper.rs")]
 mod helper;
+mod herdr;
 mod hex;
 mod icons;
 mod inbox;
@@ -2360,10 +2361,13 @@ fn main() -> Result<()> {
                 println!("Copied {} to clipboard", dir.display());
             } else {
                 let target_session = handoff::send_to_opencode(&dir, session.as_deref(), reroute)?;
-                println!(
-                    "Sent {} to OpenCode session {target_session}",
-                    dir.display()
-                );
+                match target_session.strip_prefix(herdr::PREFIX) {
+                    Some(folder) => println!("Sent {} to a herdr agent in {folder}", dir.display()),
+                    None => println!(
+                        "Sent {} to OpenCode session {target_session}",
+                        dir.display()
+                    ),
+                }
             }
             Ok(())
         }

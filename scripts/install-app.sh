@@ -11,7 +11,7 @@ CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RESOURCES_DIR="${CONTENTS_DIR}/Resources"
 FRAMEWORKS_DIR="${CONTENTS_DIR}/Frameworks"
-SIGN_ID="Developer ID Application: Christopher Langton (QC99C9JE59)"
+SIGN_ID="${SCRAWL_SIGN_ID:-Developer ID Application: Christopher Langton (QC99C9JE59)}"
 SPARKLE_PUBLIC_KEY="mIek27lttJe8cIBqVZFhh6reRKjpTx1h9ZY9OKWPtuM="
 
 cd "${REPO_DIR}"

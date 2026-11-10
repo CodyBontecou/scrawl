@@ -1085,12 +1085,12 @@ struct IngestHooks {
 impl Default for IngestHooks {
     fn default() -> Self {
         Self {
-            resolve: crate::handoff::resolve_opencode_session,
+            resolve: crate::herdr::resolve_any,
             build: |movie, timeline, bundle_dir| {
                 let (dir, bundle, _) = import(movie, Some(timeline), bundle_dir, None)?;
                 Ok((dir, Some(bundle)))
             },
-            forward: crate::handoff::send_bundle_to_session,
+            forward: crate::herdr::forward_any,
         }
     }
 }
@@ -1481,7 +1481,13 @@ fn ingest_target(timeline: &Timeline, config: &IngestConfig) -> (Option<String>,
     if !config.route_opencode {
         return (None, "Mac".to_owned());
     }
-    let app = timeline.app.as_deref().or(timeline.bundle_id.as_deref());
+    // herdr maps apps to folders by bundle ID (`routing.apps`); OpenCode matches session titles
+    // against the app's name.
+    let app = if crate::herdr::enabled() {
+        timeline.bundle_id.as_deref().or(timeline.app.as_deref())
+    } else {
+        timeline.app.as_deref().or(timeline.bundle_id.as_deref())
+    };
     match (config.hooks.resolve)(timeline.session.as_deref(), app) {
         Ok((id, title)) => (Some(id), title),
         Err(err) => {

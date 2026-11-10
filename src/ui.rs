@@ -2150,7 +2150,7 @@ impl ScrawlCoordinator {
                     &dest.session,
                     &dest.title,
                     None,
-                    crate::handoff::send_bundle_to_session,
+                    crate::herdr::forward_any,
                 ));
             });
         if spawned.is_err() {

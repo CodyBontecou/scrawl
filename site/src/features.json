@@ -437,6 +437,20 @@
       "docs": ["README.md#sending-captures-of-a-dev-site-to-its-session", "docs/iphone-and-routing.md"]
     },
     {
+      "id": "herdr-delivery",
+      "group": "delivery",
+      "name": "Recordings to a herdr agent",
+      "says": "Recordings go to a coding agent in herdr instead of OpenCode: a fresh agent in a new tab of the app's project, prompted with the recording.",
+      "status": "main",
+      "platforms": ["mac"],
+      "note": "Apps map to project folders through routing.apps; drives the herdr CLI.",
+      "config": [
+        { "key": "agentBackend", "value": "\"herdr\"", "does": "Send recordings to herdr agents instead of OpenCode" },
+        { "key": "herdr", "value": "{\"kind\": \"claude\", \"mode\": \"fresh\"}", "does": "Agent kind, fresh or reuse, agent arguments, default folder, focus" }
+      ],
+      "docs": ["docs/herdr.md"]
+    },
+    {
       "id": "sdk-js",
       "group": "delivery",
       "name": "/sdk.js page registration",
