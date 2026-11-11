@@ -150,3 +150,10 @@ internal fun java.io.InputStream.readUpTo(limit: Int): ByteArray {
     }
     return out.toByteArray()
 }
+
+/**
+ * ScrawlKit's own FileProvider for Share. A subclass, because the manifest merger treats every
+ * `androidx.core.content.FileProvider` element as one: declaring that class directly would collide
+ * with the app's own FileProvider.
+ */
+class ScrawlFileProvider : androidx.core.content.FileProvider()

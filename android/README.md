@@ -44,6 +44,24 @@ That's all: ScrawlKit wraps each app window's touch callback (Views, Compose and
 
 Macs on the LAN or tailnet are `http://` addresses, which Android blocks by default. Allow cleartext in debug builds, for example with `android:usesCleartextTraffic="true"` in `src/debug/AndroidManifest.xml`, or a debug `network_security_config` that permits your Mac's addresses.
 
+### Published artifacts and zero-code install
+
+`./gradlew publishToMavenLocal` puts `dev.kitlangton.scrawl:scrawlkit`, `scrawlkit-noop` and
+`scrawlkit-autoinstall` (version 0.1.0) in `~/.m2`. They're built for older toolchains too (Kotlin
+metadata 2.0, so Kotlin 1.9.20+; compileSdk 34+; minSdk 26), with ScrawlKit's MIT license in each
+artifact and its POM.
+
+`scrawlkit-autoinstall` starts ScrawlKit by itself as the app process starts, so an app needs no
+code, only a debug dependency (plus `mavenLocal { content { includeGroup("dev.kitlangton.scrawl") } }`
+in its repositories and the `scrawlScheme` placeholder):
+
+```kotlin
+debugImplementation("dev.kitlangton.scrawl:scrawlkit-autoinstall:0.1.0")
+```
+
+Apps that use dependency locking or checksum verification can ignore or trust the
+`dev.kitlangton.scrawl` group, since local publishes change.
+
 ## Pairing
 
 ```sh

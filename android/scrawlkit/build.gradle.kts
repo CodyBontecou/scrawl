@@ -9,6 +9,8 @@ android {
     compileSdk = 37
     defaultConfig {
         minSdk = 26
+        // Apps compiling against SDK 34+ can use it (AGP 9 would otherwise require our compileSdk).
+        aarMetadata { minCompileSdk = 34 }
         consumerProguardFiles("consumer-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -24,15 +26,15 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.19.0")
-    implementation("androidx.work:work-runtime:2.11.2")
-    implementation("androidx.customview:customview:1.1.0")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.work:work-runtime:2.10.0")
+    implementation("androidx.customview:customview:1.0.0")
     // Touch labels in Compose screens read Compose's semantics; never bundled, used only when the
     // app itself has Compose.
     compileOnly(platform("androidx.compose:compose-bom:2026.08.00"))
     compileOnly("androidx.compose.ui:ui")
     compileOnly("androidx.compose.runtime:runtime")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     testImplementation("junit:junit:4.13.2")
     // The Compose compiler plugin runs on the unit-test sources too and needs the runtime there.
     testImplementation(platform("androidx.compose:compose-bom:2026.08.00"))
@@ -57,3 +59,13 @@ androidComponents {
         }
     }
 }
+
+// Consumable by apps on older Kotlin: metadata and API at 2.0, which Kotlin 1.9.20+ can read.
+kotlin {
+    compilerOptions {
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+    }
+    coreLibrariesVersion = "2.0.21"
+}
+

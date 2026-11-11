@@ -18,4 +18,5 @@ rootProject.name = "scrawlkit-android"
 
 include(":scrawlkit")
 include(":scrawlkit-noop")
+include(":scrawlkit-autoinstall")
 include(":sample")

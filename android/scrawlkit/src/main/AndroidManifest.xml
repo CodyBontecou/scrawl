@@ -36,7 +36,7 @@
             android:foregroundServiceType="mediaProjection" />
 
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name="dev.kitlangton.scrawl.ScrawlFileProvider"
             android:authorities="${applicationId}.scrawl.files"
             android:exported="false"
             android:grantUriPermissions="true">
