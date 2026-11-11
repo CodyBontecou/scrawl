@@ -8,8 +8,8 @@ import java.util.UUID
 /*
  * ScrawlKit's public API with nothing behind it, for release builds:
  *
- *     debugImplementation("dev.kitlangton:scrawlkit")
- *     releaseImplementation("dev.kitlangton:scrawlkit-noop")
+ *     debugImplementation("dev.kitlangton.scrawl:scrawlkit")
+ *     releaseImplementation("dev.kitlangton.scrawl:scrawlkit-noop")
  *
  * Calls compile and do nothing: no permissions, activities, services, network, or files. (iOS has
  * no such split: ScrawlKit there is gated by `#if os(iOS)` and stays inert until paired; this module
