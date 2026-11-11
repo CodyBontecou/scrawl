@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The sample talks to a Mac over plain HTTP and to a local test HTTPS endpoint with a
+     self-signed certificate (`scrawl_test_ca`); real apps only need the cleartext part, in debug. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+    <domain-config>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <trust-anchors>
+            <certificates src="@raw/scrawl_test_ca" />
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

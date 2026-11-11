@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- The parity tests stand up a fake Mac on 127.0.0.1 over plain HTTP. -->
+    <application android:usesCleartextTraffic="true">
+        <activity android:name="dev.kitlangton.scrawl.TestHostActivity" android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+        <activity android:name="dev.kitlangton.scrawl.ComposeHostActivity" android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+    </application>
+</manifest>

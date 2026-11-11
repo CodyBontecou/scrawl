@@ -437,6 +437,17 @@
       "docs": ["README.md#sending-captures-of-a-dev-site-to-its-session", "docs/iphone-and-routing.md"]
     },
     {
+      "id": "scrawlkit-android",
+      "group": "delivery",
+      "name": "ScrawlKit for Android",
+      "says": "Android apps record and send to Scrawl like iOS apps: app frames or screen capture, touches, ink, the strip, LAN, USB over adb, and HTTPS delivery.",
+      "status": "main",
+      "platforms": ["mac"],
+      "note": "The library lives in android/; the Mac pulls cabled Android recordings over adb for packages in usbApps.",
+      "config": [{ "key": "usbApps", "value": "[\"md.vox.android\"]", "does": "Also pull this Android app's recordings over adb" }],
+      "docs": ["android/README.md", "android/PARITY.md"]
+    },
+    {
       "id": "herdr-delivery",
       "group": "delivery",
       "name": "Recordings to a herdr agent",

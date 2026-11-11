@@ -1322,6 +1322,10 @@ fn spawn_usb_poller(config: IngestConfig) {
                 if apps.is_empty() {
                     continue;
                 }
+                // Android phones and emulators over adb (ScrawlKit for Android).
+                if let Err(err) = poll_adb_app_dirs(&apps, &config) {
+                    scrawl_log(format!("ingest adb: {err:#}"));
+                }
                 // The USB registry check is instant, so `xcrun` only runs with an iPhone cabled.
                 if helper::devices().map_or(true, |d| d.is_empty()) {
                     continue;
@@ -1858,6 +1862,137 @@ fn poll_usb_app_containers(apps: &[String], config: &IngestConfig) -> Result<()>
                     &remote("sent"),
                 );
                 scrawl_log(format!("ingest usb {stem}: replied {outcome:?}"));
+                let _ = std::fs::remove_dir_all(&replies);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The `adb` binary: `PATH`, `$ANDROID_HOME`/`$ANDROID_SDK_ROOT`, or the SDK's default home.
+fn adb_binary() -> Option<PathBuf> {
+    if let Some(path) = crate::handoff::on_path("adb") {
+        return Some(path);
+    }
+    let candidates = ["ANDROID_HOME", "ANDROID_SDK_ROOT"]
+        .iter()
+        .filter_map(|v| std::env::var_os(v).map(PathBuf::from))
+        .chain(dirs::home_dir().map(|h| h.join("Library/Android/sdk")))
+        .map(|sdk| sdk.join("platform-tools/adb"));
+    candidates.into_iter().find(|p| p.is_file())
+}
+
+/// Serials of the Android devices adb has online (phones and emulators).
+fn adb_serials(adb: &Path) -> Vec<String> {
+    Command::new(adb)
+        .arg("devices")
+        .output()
+        .map(|o| {
+            String::from_utf8_lossy(&o.stdout)
+                .lines()
+                .skip(1)
+                .filter_map(|line| {
+                    let mut parts = line.split_whitespace();
+                    let serial = parts.next()?;
+                    (parts.next()? == "device").then(|| serial.to_owned())
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Where ScrawlKit for Android keeps recordings for a Mac: the app's external files `Scrawl`
+/// folder, which adb can read and write without root.
+fn adb_recordings_dir(package: &str) -> String {
+    format!("/sdcard/Android/data/{package}/files/Scrawl")
+}
+
+/// Android's USB path: like [`poll_usb_app_containers`], over adb. Takes in recordings the phone
+/// marked `.ready` but has no `.sent` for; once the bundle is built and sent (or 15 s pass), pushes
+/// back `.delivery` (the HTTP reply JSON) and then `.sent` (the session's name).
+fn poll_adb_app_dirs(apps: &[String], config: &IngestConfig) -> Result<()> {
+    let Some(adb) = adb_binary() else {
+        return Ok(());
+    };
+    for serial in adb_serials(&adb) {
+        for package in apps {
+            let dir = adb_recordings_dir(package);
+            let listing = Command::new(&adb)
+                .args(["-s", &serial, "shell", "ls", "-1", &dir])
+                .output()?;
+            if !listing.status.success() {
+                continue;
+            }
+            let listing = String::from_utf8_lossy(&listing.stdout);
+            let names: Vec<&str> = listing.lines().map(str::trim).collect();
+            for stem in names.iter().filter_map(|n| n.strip_suffix(".ready")) {
+                if names.contains(&format!("{stem}.sent").as_str()) {
+                    continue;
+                }
+                let retry_key = format!("adb:{serial}/{package}/{stem}");
+                if usb_backing_off(&retry_key) {
+                    continue;
+                }
+                let staging =
+                    std::env::temp_dir().join(format!("scrawl-adb-{}", crate::make_bundle_id()));
+                std::fs::create_dir_all(&staging)?;
+                let local_json = staging.join(format!("{stem}.json"));
+                let local_mp4 = staging.join(format!("{stem}.mp4"));
+                let remote = |ext: &str| format!("{dir}/{stem}.{ext}");
+                let pull = |from: &str, to: &Path| {
+                    Command::new(&adb)
+                        .args(["-s", &serial, "pull", from])
+                        .arg(to)
+                        .output()
+                        .is_ok_and(|o| o.status.success())
+                };
+                if !pull(&remote("json"), &local_json) || !pull(&remote("mp4"), &local_mp4) {
+                    let _ = std::fs::remove_dir_all(&staging);
+                    continue;
+                }
+                let timeline: Timeline = std::fs::read(&local_json)
+                    .ok()
+                    .and_then(|b| serde_json::from_slice(&b).ok())
+                    .unwrap_or_default();
+                let (outcome, title) = ingest_recording(
+                    staging,
+                    local_mp4,
+                    local_json,
+                    &timeline,
+                    config,
+                    USB_REPLY_WAIT,
+                );
+                if let Outcome::Failed(err) = &outcome {
+                    let wait = usb_failed(&retry_key);
+                    scrawl_log(format!(
+                        "ingest adb {stem}: {err}; trying again in {} s",
+                        wait.as_secs()
+                    ));
+                    continue;
+                }
+                USB_FAILURES
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .remove(&retry_key);
+                let replies =
+                    std::env::temp_dir().join(format!("scrawl-adb-{}", crate::make_bundle_id()));
+                std::fs::create_dir_all(&replies)?;
+                let delivery = replies.join(format!("{stem}.delivery"));
+                let sent = replies.join(format!("{stem}.sent"));
+                std::fs::write(
+                    &delivery,
+                    crate::delivery::reply_json(&outcome, &title).to_string(),
+                )?;
+                std::fs::write(&sent, title.as_bytes())?;
+                // `.delivery` first: ScrawlKit reads it once `.sent` appears.
+                for (file, ext) in [(&delivery, "delivery"), (&sent, "sent")] {
+                    let _ = Command::new(&adb)
+                        .args(["-s", &serial, "push"])
+                        .arg(file)
+                        .arg(remote(ext))
+                        .output();
+                }
+                scrawl_log(format!("ingest adb {stem}: replied {outcome:?}"));
                 let _ = std::fs::remove_dir_all(&replies);
             }
         }

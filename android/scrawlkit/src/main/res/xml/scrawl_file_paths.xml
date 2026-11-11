@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-files-path name="scrawl" path="Scrawl/" />
+    <files-path name="scrawl_internal" path="Scrawl/" />
+    <cache-path name="scrawl_share" path="ScrawlShare/" />
+    <cache-path name="scrawl_staging" path="ScrawlStaging/" />
+</paths>
